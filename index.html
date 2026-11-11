@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>html{color-scheme:light}body{margin:0}</style>
+<title>Prepaid Appointment Funnel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: try it as a patient (left), watch the media buyer dashboard update (right), then the reminder sequence and triage plan below. */
+:root{
+  --bg:#f5f7f7; --surface:#ffffff; --fg:#14262b; --muted:#5a6d72; --line:#d9e1e2;
+  --accent:#0f6b73; --accent-fg:#ffffff; --good:#1b7f4b; --warn:#a86a00; --bad:#b3261e;
+  --soft:#e6f1f2;
+  --display:'Space Grotesk',system-ui,sans-serif; --body:'Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1a1d; --surface:#152428; --fg:#e6eef0; --muted:#97aaae; --line:#27393d;
+  --accent:#4cc3cd; --accent-fg:#06262a; --good:#5fd08f; --warn:#e5b04a; --bad:#ff8a80; --soft:#1a3237; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1a1d; --surface:#152428; --fg:#e6eef0; --muted:#97aaae; --line:#27393d;
+  --accent:#4cc3cd; --accent-fg:#06262a; --good:#5fd08f; --warn:#e5b04a; --bad:#ff8a80; --soft:#1a3237; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(26px,4vw,36px);line-height:1.15}
+h2{font-size:20px}
+h3{font-size:16px}
+p{margin:0}
+.lede{color:var(--muted);max-width:70ch;margin-top:10px}
+.tag{display:inline-block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:8px}
+.grid{display:grid;grid-template-columns:1fr 1.15fr;gap:20px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;min-width:0}
+.sub{color:var(--muted);font-size:13px;margin:4px 0 14px}
+.note{font-size:13px;color:var(--muted)}
+.howto{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:14px}
+.howto b{font-weight:600}
+.coach{border-left:4px solid var(--accent);background:var(--soft);padding:9px 12px;border-radius:6px;font-size:13px;margin-bottom:14px}
+.coach b{font-weight:600}
+/* wizard */
+.offer{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--soft);margin-bottom:14px}
+.offer .price{font-family:var(--display);font-size:28px;font-weight:700}
+.offer .price small{font-size:13px;color:var(--muted);font-weight:500;font-family:var(--body)}
+.crumbs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.crumb{font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.crumb.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.crumb.done{color:var(--good);border-color:var(--good)}
+button,.btn{font:inherit;font-weight:600;background:var(--accent);color:var(--accent-fg);border:0;border-radius:8px;padding:10px 16px;cursor:pointer}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+button.small{padding:5px 10px;font-size:12px}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.slots{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
+.slot{background:var(--surface);color:var(--fg);border:1px solid var(--line);padding:8px 12px;font-weight:500}
+.slot[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.slot:disabled{text-decoration:line-through}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label{font-size:13px;font-weight:500}
+.field input,.field select,td select{font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;font-variant-numeric:tabular-nums}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.row2{grid-template-columns:1fr}}
+.err{color:var(--bad);font-size:13px;min-height:18px}
+.ok{border:1px solid var(--good);border-radius:8px;padding:12px 14px;background:var(--bg)}
+.sms{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.sms div{background:var(--soft);border-radius:10px;padding:8px 12px;font-size:13px}
+.sms i{display:block;font-style:normal;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+/* dashboard */
+.ctl{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:560px){.ctl{grid-template-columns:1fr 1fr}}
+.out{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:6px 0 12px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg)}
+.kpi .l{font-size:12px;color:var(--muted)}
+.kpi .v{font-family:var(--display);font-size:21px;font-weight:700;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid currentColor}
+.good{color:var(--good)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.verdict{padding:12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);font-size:14px;margin-bottom:12px}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:600;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+.empty{padding:18px;text-align:center;color:var(--muted);font-size:13px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+/* timeline + checklist */
+.tl{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tl div{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--bg)}
+.tl .t{font-size:12px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.tl p{font-size:13px;color:var(--muted);margin-top:4px}
+ol.check{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.fine{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="tag">Interactive sample for IGX Marketing</span>
+    <h1>Prepaid appointment funnel for an aesthetic clinic</h1>
+    <p class="lede">Use it end to end. Book a first session as a patient on the left, and the booking appears in the media buyer dashboard on the right, where cost per booked appointment, show rate and revenue update as you work it. Nothing is sent anywhere. Everything stays in this browser tab, and the clinic, prices and ad spend are samples.</p>
+  </header>
+
+  <div class="howto"><b>Try this:</b> 1) Book two or three patients on the left. 2) In the dashboard, mark who showed, who did not, and who bought a package. 3) Press "Simulate a day of ads" and watch cost per booked appointment move against the clinic's targets.</div>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="p-h">
+      <h2 id="p-h">Patient view: book a first session</h2>
+      <p class="sub">What a patient does after clicking the ad.</p>
+      <div class="offer">
+        <h3>RF Microneedling, first session</h3>
+        <div class="price"><span id="offerPrice">$299</span> <small>first session, <span id="depAmt">$50</span> deposit holds your spot</small></div>
+      </div>
+      <div class="crumbs" id="crumbs"><span class="crumb on" data-s="1">1 Pick a time</span><span class="crumb" data-s="2">2 Your details</span><span class="crumb" data-s="3">3 Deposit</span></div>
+
+      <div class="coach" id="coachP" role="status"></div>
+      <div id="step1">
+        <div class="note">Open times</div>
+        <div class="slots" id="slots"></div>
+        <button id="next1" type="button" disabled>Continue</button>
+      </div>
+
+      <div id="step2" hidden>
+        <div class="field"><label for="pname">Name</label><input id="pname" autocomplete="off" placeholder="Sample Patient"></div>
+        <div class="row2">
+          <div class="field"><label for="pphone">Mobile for reminders</label><input id="pphone" autocomplete="off" placeholder="Any sample number"></div>
+          <div class="field"><label for="pmail">Email</label><input id="pmail" autocomplete="off" placeholder="sample@example.com"></div>
+        </div>
+        <p class="note">Demo only. Use made-up details. Nothing leaves this page.</p>
+        <div class="err" id="err2" role="alert"></div>
+        <div class="btns"><button class="ghost" id="back2" type="button">Back</button><button id="next2" type="button">Continue to deposit</button></div>
+      </div>
+
+      <div id="step3" hidden>
+        <div class="verdict" id="summary"></div>
+        <p class="note">No deposit, no booking. This is a demo, so no card is taken: the button below stands in for the payment step.</p>
+        <div class="btns"><button class="ghost" id="back3" type="button">Back</button><button id="pay" type="button">Pay deposit (demo)</button></div>
+      </div>
+
+      <div id="step4" hidden>
+        <div class="ok" id="confirm" role="status"></div>
+        <div class="sms" id="smsList"></div>
+        <div class="btns"><button id="another" type="button">Book another patient</button></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="d-h">
+      <h2 id="d-h">Media buyer view: live account dashboard</h2>
+      <p class="sub">Judged on cost per booked appointment, volume against the 40-a-month standard, show rate and clinic revenue.</p>
+      <div class="coach" id="coachD" role="status"></div>
+      <div class="ctl">
+        <div class="field"><label for="spend">Ad spend this period ($)</label><input id="spend" type="number" min="1" value="750"></div>
+        <div class="field"><label for="mspend">Monthly budget ($)</label><input id="mspend" type="number" min="1" value="3000"></div>
+        <div class="field"><label for="price">First session price ($)</label><input id="price" type="number" min="1" value="299"></div>
+        <div class="field"><label for="pkgval">Package value ($)</label><input id="pkgval" type="number" min="0" value="1500"></div>
+        <div class="field"><label for="dep">Deposit ($)</label><input id="dep" type="number" min="1" value="50"></div>
+      </div>
+      <div class="out" aria-live="polite">
+        <div class="kpi"><div class="l">Booked and paid</div><div class="v" id="k-book">0</div></div>
+        <div class="kpi"><div class="l">Cost per booked appt</div><div class="v" id="k-cpa">n/a</div></div>
+        <div class="kpi"><div class="l">Show rate</div><div class="v" id="k-show">n/a</div></div>
+        <div class="kpi"><div class="l">Clinic revenue</div><div class="v" id="k-rev">$0</div></div>
+      </div>
+      <div class="verdict" id="verdict"></div>
+      <div class="tblwrap">
+        <table>
+          <thead><tr><th>Patient</th><th>Time</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="empty" id="empty">No bookings yet. Book a patient on the left, or simulate a day of ads.</div>
+      </div>
+      <div class="btns">
+        <button id="sim" type="button">Simulate a day of ads</button>
+        <button class="ghost" id="reset" type="button">Reset demo</button>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="r-h">
+    <h2 id="r-h">Reminder sequence that protects show rate</h2>
+    <p class="sub">Email and SMS, sent automatically from the booking. This is the kind of automation I build in GoHighLevel and n8n. Book a patient above to see the first messages filled in.</p>
+    <div class="tl">
+      <div><span class="t">On booking</span><p>Confirmation with time, prep instructions and the deposit receipt.</p></div>
+      <div><span class="t">24 hours before</span><p>SMS with a one-tap reschedule link, so a conflict becomes a new booking instead of a no-show.</p></div>
+      <div><span class="t">2 hours before</span><p>Short SMS with the address and parking details.</p></div>
+      <div><span class="t">No-show</span><p>Same-day message offering a rebook. The deposit is already held.</p></div>
+      <div><span class="t">After the session</span><p>Aftercare note, then the package offer while results are fresh.</p></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="t-h">
+    <h2 id="t-h">If cost per appointment doubles this week</h2>
+    <p class="sub">How I would triage it, in the order I would check. Try it: lower the bookings by raising ad spend in the dashboard and see which targets break.</p>
+    <ol class="check">
+      <li><b>Tracking first.</b> Confirm deposits and bookings still reach Meta and match the calendar. A tracking break looks like a cost spike.</li>
+      <li><b>Which layer moved.</b> Compare CPM, click-through rate and landing page conversion against last week. Cost per appointment is the product of all three.</li>
+      <li><b>Creative fatigue.</b> Check frequency and the age of the top ads. If the winner is old, launch new hooks on the same offer.</li>
+      <li><b>Booking page and calendar.</b> Test the page on a phone. Confirm slots are open and the deposit step loads.</li>
+      <li><b>Changes on our side.</b> Review the account change log for edits to budget, audience or bidding in the last seven days.</li>
+    </ol>
+    <p class="note" style="margin-top:12px">On the client call: lead with the number, name the layer that moved, say what I have already changed, and give the date I expect it to recover.</p>
+  </section>
+
+  <p class="fine">Prepared by Rufaro Nyamaharo. The clinic, treatment, prices, spend and every booking in this demo are samples for illustration. Results in real accounts depend on the market, the offer and the budget.</p>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var money=function(n){return '$'+Math.round(n).toLocaleString('en-US')};
+  var STATUS=['Booked','Reminded','Showed','No-show','Package sold'];
+  var appts=[], chosen=null, nextId=1;
+
+  function makeSlots(){
+    var names=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], out=[], d=new Date(), i=0;
+    while(out.length<8 && i<14){
+      i++; d=new Date(d.getTime()+86400000);
+      var wd=d.getDay(); if(wd===0) continue;
+      var label=names[(wd+6)%7]+' '+(d.getMonth()+1)+'/'+d.getDate();
+      var times=wd===6?['09:00','10:30']:['10:00','14:30'];
+      times.forEach(function(t){ if(out.length<8) out.push(label+' '+t); });
+    }
+    return out;
+  }
+  var allSlots=makeSlots();
+  function taken(s){return appts.some(function(a){return a.slot===s})}
+
+  function renderSlots(){
+    var box=$('slots'); box.innerHTML='';
+    allSlots.forEach(function(s){
+      var b=document.createElement('button'); b.type='button'; b.className='slot'; b.textContent=s;
+      b.disabled=taken(s); b.setAttribute('aria-pressed',chosen===s?'true':'false');
+      b.addEventListener('click',function(){chosen=s; renderSlots(); $('next1').disabled=false;});
+      box.appendChild(b);
+    });
+  }
+  function step(n){
+    ['step1','step2','step3','step4'].forEach(function(id,i){$(id).hidden=(i+1)!==n});
+    [].forEach.call($('crumbs').children,function(c){
+      var s=+c.getAttribute('data-s'); c.className='crumb'+(n===s?' on':(n>s?' done':''));
+    });
+    $('crumbs').hidden=(n===4);
+    $('coachP').innerHTML=[
+      '<b>Step 1 of 3.</b> Tap any open time. Crossed-out times are already booked.',
+      '<b>Step 2 of 3.</b> Type any made-up details. Nothing is stored or sent anywhere.',
+      '<b>Step 3 of 3.</b> Check the summary, then press Pay deposit. No card is needed.',
+      '<b>Done.</b> Your booking is now in the dashboard on the right. Book another patient, or go work it there.'
+    ][n-1];
+  }
+  function price(){return Math.max(1,+$('price').value||0)}
+  function dep(){return Math.max(1,+$('dep').value||0)}
+
+  $('next1').addEventListener('click',function(){ if(chosen) step(2); });
+  $('back2').addEventListener('click',function(){ step(1); });
+  $('back3').addEventListener('click',function(){ step(2); });
+  $('next2').addEventListener('click',function(){
+    var n=$('pname').value.trim(), p=$('pphone').value.trim(), m=$('pmail').value.trim();
+    if(!n){$('err2').textContent='Add a name to continue.';return}
+    if(p.replace(/\D/g,'').length<7){$('err2').textContent='Add a mobile number with at least 7 digits. It can be made up.';return}
+    if(m.indexOf('@')<1){$('err2').textContent='Add an email address that includes @. It can be made up.';return}
+    $('err2').textContent='';
+    var s=$('summary'); s.textContent='';
+    var l1=document.createElement('div'); l1.innerHTML='<b></b>'; l1.firstChild.textContent=n+', RF Microneedling';
+    var l2=document.createElement('div'); l2.textContent=chosen+'. Deposit due now: '+money(dep())+' of '+money(price())+'.';
+    s.appendChild(l1); s.appendChild(l2);
+    step(3);
+  });
+  $('pay').addEventListener('click',function(){
+    if(taken(chosen)){chosen=null; renderSlots(); step(1); return}
+    var a={id:nextId++, name:$('pname').value.trim(), slot:chosen, status:'Booked', source:'You'};
+    appts.push(a);
+    var c=$('confirm'); c.textContent='';
+    var b=document.createElement('b'); b.textContent='You are booked, '+a.name.split(' ')[0]+'.'; c.appendChild(b);
+    var t=document.createElement('div'); t.textContent=a.slot+'. Deposit of '+money(dep())+' received (demo). The reminder sequence has started.'; c.appendChild(t);
+    var list=$('smsList'); list.innerHTML='';
+    [['SMS, just now','Hi '+a.name.split(' ')[0]+', your RF Microneedling session is booked for '+a.slot+'. Your '+money(dep())+' deposit is applied to the '+money(price())+' price. Reply R to reschedule.'],
+     ['SMS, 24 hours before','Reminder: your session is tomorrow ('+a.slot+'). Tap to confirm or move it.'],
+     ['SMS, 2 hours before','See you soon. Address and parking details are in your confirmation email.']
+    ].forEach(function(x){
+      var d=document.createElement('div'), i=document.createElement('i'); i.textContent=x[0];
+      d.appendChild(i); d.appendChild(document.createTextNode(x[1])); list.appendChild(d);
+    });
+    chosen=null; $('pname').value=''; $('pphone').value=''; $('pmail').value='';
+    renderSlots(); step(4); render();
+  });
+  $('another').addEventListener('click',function(){ $('next1').disabled=true; step(1); });
+
+  function setStatus(id,st){ appts.forEach(function(a){ if(a.id===id) a.status=st; }); render(); }
+
+  function render(){
+    $('offerPrice').textContent=money(price()); $('depAmt').textContent=money(dep());
+    var spend=Math.max(1,+$('spend').value||1), mspend=Math.max(1,+$('mspend').value||1), pv=+$('pkgval').value||0;
+    var booked=appts.length;
+    var showed=appts.filter(function(a){return a.status==='Showed'||a.status==='Package sold'}).length;
+    var noshow=appts.filter(function(a){return a.status==='No-show'}).length;
+    var pk=appts.filter(function(a){return a.status==='Package sold'}).length;
+    var decided=showed+noshow;
+    var cpa=booked?spend/booked:0;
+    var rev=showed*price()+pk*pv;
+    var proj=booked*(mspend/spend);
+    $('k-book').textContent=booked;
+    $('k-cpa').textContent=booked?money(cpa):'n/a';
+    $('k-show').textContent=decided?Math.round(showed/decided*100)+'%':'n/a';
+    $('k-rev').textContent=money(rev);
+    var ceiling=price()/3, v=$('verdict');
+    if(!booked){ v.innerHTML='Cost ceiling at one third of the price is <b>'+money(ceiling)+'</b>. Book a patient or simulate ads to see where the account stands.'; }
+    else{
+      var okC=cpa<=ceiling, okV=proj>=40;
+      v.innerHTML='Cost per booked appointment <span class="pill '+(okC?'good':'bad')+'">'+money(cpa)+'</span> against a ceiling of '+money(ceiling)+'.<br>'
+        +'Pace at this cost: <span class="pill '+(okV?'good':proj>=30?'warn':'bad')+'">'+Math.round(proj)+' a month</span> against the standard of 40 on '+money(mspend)+'.<br>'
+        +'<span class="note">'+(!okC?'Cost is too high. Check the layer that moved: tracking, click-through, landing page conversion.':(!okV?'Cost is healthy. Scale spend in steps of about 20% and watch cost per appointment.':'Both targets met. Hold the offer and test new hooks.'))+'</span>';
+    }
+    var body=$('rows'); body.innerHTML='';
+    appts.slice().reverse().forEach(function(a){
+      var tr=document.createElement('tr');
+      var td1=document.createElement('td'); td1.textContent=a.name+(a.source==='You'?' (you)':'');
+      var td2=document.createElement('td'); td2.textContent=a.slot;
+      var td3=document.createElement('td'); var sel=document.createElement('select'); sel.setAttribute('aria-label','Status for '+a.name);
+      STATUS.forEach(function(s){var o=document.createElement('option'); o.textContent=s; if(s===a.status) o.selected=true; sel.appendChild(o);});
+      sel.addEventListener('change',function(){ setStatus(a.id,sel.value); }); td3.appendChild(sel);
+      var td4=document.createElement('td'); td4.style.whiteSpace='nowrap';
+      [['Showed','Showed'],['No-show','No-show'],['Package','Package sold']].forEach(function(x){
+        var b=document.createElement('button'); b.type='button'; b.className='small ghost'; b.textContent=x[0]; b.style.marginRight='6px';
+        b.addEventListener('click',function(){ setStatus(a.id,x[1]); }); td4.appendChild(b);
+      });
+      tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4); body.appendChild(tr);
+    });
+    $('empty').hidden=booked>0;
+    var cd=$('coachD');
+    if(!booked) cd.innerHTML='<b>Start here.</b> Book a patient on the left, or press Simulate a day of ads.';
+    else if(!decided) cd.innerHTML='<b>Next.</b> Mark what happened to each patient with the Showed, No-show and Package buttons. Show rate and Clinic revenue will update.';
+    else if(!pk) cd.innerHTML='<b>Next.</b> Mark someone as Package to see how a package sale lifts clinic revenue.';
+    else cd.innerHTML='<b>Now stress-test it.</b> Raise Ad spend this period and watch cost per booked appointment and the verdict react. This is the number the account is judged on.';
+  }
+  var FIRST=['Maya','Jordan','Priya','Elena','Chris','Dana','Sam','Noor','Alex','Tess','Marcus','Lena'];
+  var LAST=['R.','K.','P.','M.','T.','L.','S.','D.'];
+  $('sim').addEventListener('click',function(){
+    var free=allSlots.filter(function(s){return !taken(s)});
+    var n=Math.min(free.length, 2+Math.floor(Math.random()*3));
+    for(var i=0;i<n;i++){
+      var idx=Math.floor(Math.random()*free.length), s=free.splice(idx,1)[0];
+      var st=Math.random()<0.8?(Math.random()<0.4?'Package sold':'Showed'):'No-show';
+      appts.push({id:nextId++, name:FIRST[Math.floor(Math.random()*FIRST.length)]+' '+LAST[Math.floor(Math.random()*LAST.length)], slot:s, status:st, source:'Ads'});
+    }
+    if(n===0){$('verdict').textContent='Every sample slot is taken. Press Reset demo to start over.'; return}
+    renderSlots(); render();
+  });
+  $('reset').addEventListener('click',function(){ appts=[]; chosen=null; $('next1').disabled=true; renderSlots(); step(1); render(); });
+  ['spend','mspend','price','pkgval','dep'].forEach(function(id){$(id).addEventListener('input',render)});
+  renderSlots(); step(1); render();
+})();
+</script>
+
+</body>
+</html>
