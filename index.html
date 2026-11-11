@@ -308,7 +308,7 @@ ol.check{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap
       var okC=cpa<=ceiling, okV=proj>=40;
       v.innerHTML='Cost per booked appointment <span class="pill '+(okC?'good':'bad')+'">'+money(cpa)+'</span> against a ceiling of '+money(ceiling)+'.<br>'
         +'Pace at this cost: <span class="pill '+(okV?'good':proj>=30?'warn':'bad')+'">'+Math.round(proj)+' a month</span> against the standard of 40 on '+money(mspend)+'.<br>'
-        +'<span class="note">'+(!okC?'Cost is too high. Check the layer that moved: tracking, click-through, landing page conversion.':(!okV?'Cost is healthy. Scale spend in steps of about 20% and watch cost per appointment.':'Both targets met. Hold the offer and test new hooks.'))+'</span>';
+        +'<span class="note">'+(booked<4?'Early days: a few bookings against a full period of spend always looks expensive. Press Simulate a day of ads to add volume and watch the cost fall.':(!okC?'Cost is too high. Check the layer that moved: tracking, click-through, landing page conversion.':(!okV?'Cost is healthy. Scale spend in steps of about 20% and watch cost per appointment.':'Both targets met. Hold the offer and test new hooks.')))+'</span>';
     }
     var body=$('rows'); body.innerHTML='';
     appts.slice().reverse().forEach(function(a){
